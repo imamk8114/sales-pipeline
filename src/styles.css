@@ -429,7 +429,8 @@ kbd {
 
 .row {
   display: grid;
-  grid-template-columns: 32px 230px 130px 115px 70px 150px 100px 90px 90px 1fr;
+  grid-template-columns: 32px minmax(220px, 1.6fr) minmax(120px, 0.85fr) minmax(105px, 0.75fr) 70px minmax(140px, 0.95fr)
+    minmax(90px, 0.6fr) minmax(80px, 0.6fr) 90px;
   align-items: center;
   border-bottom: 1px solid var(--border-soft);
   font-size: 13px;
@@ -492,6 +493,18 @@ kbd {
 .cell--check {
   display: flex;
   justify-content: center;
+  overflow: visible;
+}
+
+.cell--check input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+}
+
+.cell--check input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .sortable {
@@ -586,6 +599,10 @@ kbd {
   font-weight: 600;
 }
 
+.cell--stage {
+  overflow: visible;
+}
+
 .cell--stage select {
   width: 100%;
   background: #121b29;
@@ -595,6 +612,12 @@ kbd {
   font-size: 11px;
   border-radius: 7px;
   cursor: pointer;
+}
+
+.cell--stage select:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-dim), 0 0 0 1px var(--accent);
 }
 
 .cell--status {

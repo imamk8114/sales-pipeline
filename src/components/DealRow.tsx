@@ -41,7 +41,7 @@ function DealRowInner({ id, top, height, isSelected, isActive }: Props) {
 
   if (!deal) return null;
 
-  function handleRowClick(e: React.MouseEvent) {
+  function handleRowClick(e: { shiftKey: boolean }) {
     setActiveId(id);
     if (e.shiftKey) selectRangeTo(id);
     else toggleSelect(id);
@@ -69,7 +69,12 @@ function DealRowInner({ id, top, height, isSelected, isActive }: Props) {
           checked={isSelected}
           onChange={() => {}}
           onClick={handleRowClick}
-          tabIndex={-1}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleRowClick(e);
+            }
+          }}
           aria-label={`Select ${deal.company}`}
         />
       </div>
