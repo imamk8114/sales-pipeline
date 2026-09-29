@@ -24,17 +24,9 @@ export function formatFullDate(timestamp: number): string {
   return fullDate.format(timestamp);
 }
 
-/** "Today" / "Yesterday" / "5 days ago" relative label for a timestamp. */
-export function formatRelativeDay(timestamp: number): string {
-  const days = Math.floor((Date.now() - timestamp) / 86_400_000);
-  if (days <= 0) return "Today";
-  if (days === 1) return "Yesterday";
-  return `${days} days ago`;
-}
-
-/** "New today" / "3d in stage" — the age-in-stage half of the Last activity cell. */
+/** "New" / "3d" — the age-in-stage half of the Last activity cell. */
 export function formatStageAge(days: number): string {
   const whole = Math.floor(days);
-  if (whole <= 0) return "New today";
-  return `${whole}d in stage`;
+  if (whole <= 0) return "New";
+  return `${whole}d`;
 }

@@ -9,7 +9,7 @@ import {
   toggleSelect,
   useDeal,
 } from "../store/pipelineStore";
-import { currencyFull as currency, formatRelativeDay, formatShortDate, formatStageAge } from "../format";
+import { currencyFull as currency, formatShortDate, formatStageAge } from "../format";
 
 function stageAgeDays(stageChangedAt: number): number {
   return (Date.now() - stageChangedAt) / 86_400_000;
@@ -101,7 +101,7 @@ function DealRowInner({ id, top, height, isSelected, isActive }: Props) {
       </div>
       <div className={"cell cell--activity" + (stale ? " cell--stale" : "")} onClick={handleRowClick}>
         <span>{formatStageAge(age)}</span>
-        <small>{formatRelativeDay(deal.updatedAt)} · {formatShortDate(deal.updatedAt)}</small>
+        <small>{formatShortDate(deal.updatedAt)}</small>
       </div>
       <div className="cell cell--status">
         {deal.syncStatus === "saving" && (

@@ -429,11 +429,11 @@ kbd {
 
 .row {
   display: grid;
-  grid-template-columns: 32px minmax(200px, 1.4fr) 130px 115px 70px 150px 100px 140px 90px;
+  grid-template-columns: 32px minmax(200px, 1.4fr) 130px 115px 70px 150px 100px 90px 90px;
   align-items: center;
   border-bottom: 1px solid var(--border-soft);
   font-size: 13px;
-  min-width: 1050px;
+  min-width: 1000px;
 }
 
 .row--header {
