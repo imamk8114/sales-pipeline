@@ -10,7 +10,7 @@ export interface DealTableHandle {
 }
 
 function Header() {
-  const { sortField, sortDir } = getSort();
+  const { field: sortField, dir: sortDir } = getSort();
   function arrow(f: SortField) {
     if (sortField !== f) return "";
     return sortDir === "asc" ? " ↑" : " ↓";

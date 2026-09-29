@@ -2,31 +2,38 @@ import { useState } from "react";
 import { STAGES, Stage } from "../types";
 import {
   OWNERS_FOR_FILTER,
+  SortField,
   clearSelection,
   getTotalCount,
   moveDeals,
-  retryAllFailed,
   selectAllFiltered,
   setFilters,
+  setSort,
   useActivity,
-  useFailedCount,
   useFilteredIds,
   useFilters,
   useSelection,
+  useSort,
 } from "../store/pipelineStore";
 
 interface Props {
   searchRef: React.RefObject<HTMLInputElement>;
   onSearchFocusChange: (focused: boolean) => void;
-  onOpenSettings: () => void;
 }
 
-export function Toolbar({ searchRef, onSearchFocusChange, onOpenSettings }: Props) {
+const SORT_OPTIONS: { field: SortField; label: string }[] = [
+  { field: "stageAge", label: "Longest in stage" },
+  { field: "updatedAt", label: "Most recently active" },
+  { field: "amount", label: "Highest value" },
+  { field: "company", label: "Company name" },
+];
+
+export function Toolbar({ searchRef, onSearchFocusChange }: Props) {
   const filters = useFilters();
   const selection = useSelection();
   const ids = useFilteredIds();
-  const failedCount = useFailedCount();
   const activity = useActivity();
+  const { field: sortField } = useSort();
   const [showActivity, setShowActivity] = useState(false);
   const total = getTotalCount();
 
@@ -37,15 +44,19 @@ export function Toolbar({ searchRef, onSearchFocusChange, onOpenSettings }: Prop
   return (
     <div className="toolbar">
       <div className="toolbar__row">
-        <input
-          ref={searchRef}
-          className="search"
-          placeholder="Search company… ( / )"
-          value={filters.search}
-          onChange={(e) => apply({ search: e.target.value })}
-          onFocus={() => onSearchFocusChange(true)}
-          onBlur={() => onSearchFocusChange(false)}
-        />
+        <div className="search-wrap">
+          <span className="search-wrap__icon">⌕</span>
+          <input
+            ref={searchRef}
+            className="search"
+            placeholder="Search company…"
+            value={filters.search}
+            onChange={(e) => apply({ search: e.target.value })}
+            onFocus={() => onSearchFocusChange(true)}
+            onBlur={() => onSearchFocusChange(false)}
+          />
+          <kbd className="search-wrap__kbd">/</kbd>
+        </div>
         <select value={filters.stage} onChange={(e) => apply({ stage: e.target.value as Stage | "all" })}>
           <option value="all">All stages</option>
           {STAGES.map((s) => (
@@ -62,22 +73,21 @@ export function Toolbar({ searchRef, onSearchFocusChange, onOpenSettings }: Prop
             </option>
           ))}
         </select>
-        <span className="toolbar__count">
-          {ids.length.toLocaleString()} / {total.toLocaleString()}
-        </span>
+        <select value={sortField} onChange={(e) => setSort(e.target.value as SortField)}>
+          {SORT_OPTIONS.map((o) => (
+            <option key={o.field} value={o.field}>
+              {o.label}
+            </option>
+          ))}
+        </select>
 
         <div className="toolbar__spacer" />
 
-        {failedCount > 0 && (
-          <button className="btn btn--danger" onClick={() => retryAllFailed()}>
-            Retry {failedCount} failed save{failedCount === 1 ? "" : "s"}
-          </button>
-        )}
-        <button className="btn" onClick={() => setShowActivity((v) => !v)}>
+        <span className="toolbar__count">
+          {ids.length.toLocaleString()} / {total.toLocaleString()} shown
+        </span>
+        <button className="ghost-btn" onClick={() => setShowActivity((v) => !v)}>
           Activity {activity.length > 0 && `(${activity.length})`}
-        </button>
-        <button className="btn" onClick={onOpenSettings}>
-          Simulate network…
         </button>
       </div>
 

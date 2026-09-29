@@ -183,8 +183,7 @@ export interface Filters {
 }
 
 let filters: Filters = { stage: "all", owner: "all", search: "" };
-let sortField: SortField = "stageAge";
-let sortDir: "asc" | "desc" = "desc";
+let sort: { field: SortField; dir: "asc" | "desc" } = { field: "stageAge", dir: "desc" };
 
 let filteredIds: string[] = allIds.slice();
 recomputeView();
@@ -208,12 +207,12 @@ function recomputeView() {
     ids = ids.slice();
   }
 
-  const dir = sortDir === "asc" ? 1 : -1;
+  const dir = sort.dir === "asc" ? 1 : -1;
   ids.sort((a, b) => {
     const da = deals.get(a)!;
     const db = deals.get(b)!;
     let va: number | string, vb: number | string;
-    switch (sortField) {
+    switch (sort.field) {
       case "amount":
         va = da.amount;
         vb = db.amount;
@@ -274,15 +273,24 @@ export function setFilters(patch: Partial<Filters>) {
 }
 
 export function getSort() {
-  return { sortField, sortDir };
+  return sort;
+}
+
+export function useSort(): { field: SortField; dir: "asc" | "desc" } {
+  return useSyncExternalStore(
+    (cb) => {
+      listListeners.add(cb);
+      return () => listListeners.delete(cb);
+    },
+    () => sort
+  );
 }
 
 export function setSort(field: SortField) {
-  if (sortField === field) {
-    sortDir = sortDir === "asc" ? "desc" : "asc";
+  if (sort.field === field) {
+    sort = { field, dir: sort.dir === "asc" ? "desc" : "asc" };
   } else {
-    sortField = field;
-    sortDir = field === "company" ? "asc" : "desc";
+    sort = { field, dir: field === "company" ? "asc" : "desc" };
   }
   recomputeView();
 }
@@ -406,6 +414,23 @@ interface QueueItem {
 const queue: QueueItem[] = [];
 let activeSaves = 0;
 
+let savingCount = 0;
+const savingListeners = new Set<() => void>();
+
+function notifySaving() {
+  savingListeners.forEach((cb) => cb());
+}
+
+export function useSavingCount(): number {
+  return useSyncExternalStore(
+    (cb) => {
+      savingListeners.add(cb);
+      return () => savingListeners.delete(cb);
+    },
+    () => savingCount
+  );
+}
+
 let activity: { id: string; message: string; time: number }[] = [];
 const activityListeners = new Set<() => void>();
 
@@ -438,6 +463,8 @@ function pump() {
         if (d) {
           patchDeal(item.id, { syncStatus: "idle", lastError: undefined, retryCount: 0 });
           notifyRow(item.id);
+          savingCount--;
+          notifySaving();
         }
       })
       .catch((err: Error) => {
@@ -454,6 +481,8 @@ function pump() {
           notifyRow(item.id);
           errorCount++;
           notifyCount();
+          savingCount--;
+          notifySaving();
           pushActivity(`Failed to save "${d.company}" → ${item.patch.stage ?? item.patch.owner}`);
         }
       })
@@ -472,6 +501,10 @@ export function moveDeals(ids: string[], stage: Stage) {
     if (d.syncStatus === "error") {
       errorCount--;
       notifyCount();
+    }
+    if (d.syncStatus !== "saving") {
+      savingCount++;
+      notifySaving();
     }
     const before = d;
     const after = patchDeal(id, {
@@ -495,6 +528,10 @@ export function retryDeal(id: string) {
   if (d.syncStatus === "error") {
     errorCount--;
     notifyCount();
+  }
+  if (d.syncStatus !== "saving") {
+    savingCount++;
+    notifySaving();
   }
   patchDeal(id, { syncStatus: "saving" });
   notifyRow(id);
@@ -562,6 +599,7 @@ if (import.meta.env.DEV) {
     getErrorCount: () => errorCount,
     countActualErrors: () => allIds.filter((id) => deals.get(id)!.syncStatus === "error").length,
     countActualSaving: () => allIds.filter((id) => deals.get(id)!.syncStatus === "saving").length,
+    getSavingCount: () => savingCount,
     queueLength: () => queue.length,
     activeSaves: () => activeSaves,
   };
