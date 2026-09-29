@@ -3,7 +3,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { DealRow } from "./DealRow";
 import { SortField, setSort, useActiveId, useFilteredIds, useSelection, getSort } from "../store/pipelineStore";
 
-const ROW_HEIGHT = 36;
+const ROW_HEIGHT = 52;
 
 export interface DealTableHandle {
   scrollToId: (id: string) => void;
@@ -18,20 +18,22 @@ function Header() {
   return (
     <div className="row row--header" role="row">
       <div className="cell cell--check" />
-      <div className="cell cell--index">#</div>
-      <div className="cell cell--company sortable" onClick={() => setSort("company")}>
-        Company{arrow("company")}
+      <div className="cell cell--deal sortable" onClick={() => setSort("company")}>
+        Deal{arrow("company")}
       </div>
+      <div className="cell cell--owner">Owner</div>
       <div className="cell cell--amount sortable" onClick={() => setSort("amount")}>
-        Amount{arrow("amount")}
+        Value{arrow("amount")}
       </div>
       <div className="cell cell--licences">Licences</div>
-      <div className="cell cell--owner">Owner</div>
       <div className="cell cell--stage">Stage</div>
-      <div className="cell cell--age sortable" onClick={() => setSort("stageAge")}>
-        Age in stage{arrow("stageAge")}
+      <div className="cell cell--created sortable" onClick={() => setSort("createdAt")}>
+        Created{arrow("createdAt")}
       </div>
-      <div className="cell cell--status">Sync</div>
+      <div className="cell cell--activity sortable" onClick={() => setSort("updatedAt")}>
+        Last activity{arrow("updatedAt")}
+      </div>
+      <div className="cell cell--status">Save</div>
     </div>
   );
 }
@@ -69,7 +71,6 @@ export const DealTable = forwardRef<DealTableHandle>(function DealTable(_props, 
               <DealRow
                 key={id}
                 id={id}
-                index={vi.index}
                 top={vi.start}
                 height={vi.size}
                 isSelected={selection.has(id)}

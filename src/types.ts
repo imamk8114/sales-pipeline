@@ -19,6 +19,7 @@ export interface Deal {
   licences: number;
   owner: string;
   stage: Stage;
+  createdAt: number;
   updatedAt: number;
   stageChangedAt: number;
   syncStatus: SyncStatus;

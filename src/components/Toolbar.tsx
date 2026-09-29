@@ -24,6 +24,7 @@ interface Props {
 const SORT_OPTIONS: { field: SortField; label: string }[] = [
   { field: "stageAge", label: "Longest in stage" },
   { field: "updatedAt", label: "Most recently active" },
+  { field: "createdAt", label: "Newest lead" },
   { field: "amount", label: "Highest value" },
   { field: "company", label: "Company name" },
 ];

@@ -174,7 +174,7 @@ export function useDeal(id: string): Deal | undefined {
 // Filters / sort / view order
 // ---------------------------------------------------------------------------
 
-export type SortField = "updatedAt" | "stageAge" | "amount" | "company";
+export type SortField = "updatedAt" | "stageAge" | "amount" | "company" | "createdAt";
 
 export interface Filters {
   stage: Stage | "all";
@@ -224,6 +224,10 @@ function recomputeView() {
       case "stageAge":
         va = stageAgeDays(da);
         vb = stageAgeDays(db);
+        break;
+      case "createdAt":
+        va = da.createdAt;
+        vb = db.createdAt;
         break;
       default:
         va = da.updatedAt;

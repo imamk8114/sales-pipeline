@@ -10,3 +10,31 @@ export function currencyCompact(amount: number): string {
   if (amount >= 1e5) return `₹${(amount / 1e5).toFixed(2)} L`;
   return currencyFull.format(amount);
 }
+
+const shortDate = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" });
+const fullDate = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
+/** "29 Sep" — used for last-activity and created-date columns. */
+export function formatShortDate(timestamp: number): string {
+  return shortDate.format(timestamp);
+}
+
+/** "29 Sep 2025" — used where the year isn't otherwise implied. */
+export function formatFullDate(timestamp: number): string {
+  return fullDate.format(timestamp);
+}
+
+/** "Today" / "Yesterday" / "5 days ago" relative label for a timestamp. */
+export function formatRelativeDay(timestamp: number): string {
+  const days = Math.floor((Date.now() - timestamp) / 86_400_000);
+  if (days <= 0) return "Today";
+  if (days === 1) return "Yesterday";
+  return `${days} days ago`;
+}
+
+/** "New today" / "3d in stage" — the age-in-stage half of the Last activity cell. */
+export function formatStageAge(days: number): string {
+  const whole = Math.floor(days);
+  if (whole <= 0) return "New today";
+  return `${whole}d in stage`;
+}

@@ -9,22 +9,25 @@ import {
   toggleSelect,
   useDeal,
 } from "../store/pipelineStore";
-import { currencyFull as currency } from "../format";
+import { currencyFull as currency, formatRelativeDay, formatShortDate, formatStageAge } from "../format";
 
 function stageAgeDays(stageChangedAt: number): number {
-  return Math.floor((Date.now() - stageChangedAt) / 86_400_000);
+  return (Date.now() - stageChangedAt) / 86_400_000;
+}
+
+function dealNumber(id: string): string {
+  return id.replace("deal-", "#");
 }
 
 interface Props {
   id: string;
-  index: number;
   top: number;
   height: number;
   isSelected: boolean;
   isActive: boolean;
 }
 
-function DealRowInner({ id, index, top, height, isSelected, isActive }: Props) {
+function DealRowInner({ id, top, height, isSelected, isActive }: Props) {
   const deal = useDeal(id);
   const [flash, setFlash] = useState(false);
 
@@ -61,11 +64,22 @@ function DealRowInner({ id, index, top, height, isSelected, isActive }: Props) {
       aria-selected={isSelected}
     >
       <div className="cell cell--check">
-        <input type="checkbox" checked={isSelected} onChange={() => {}} onClick={handleRowClick} tabIndex={-1} aria-label={`Select ${deal.company}`} />
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={() => {}}
+          onClick={handleRowClick}
+          tabIndex={-1}
+          aria-label={`Select ${deal.company}`}
+        />
       </div>
-      <div className="cell cell--index">{index + 1}</div>
-      <div className="cell cell--company" onClick={handleRowClick} title={deal.company}>
-        {deal.company}
+      <div className="cell cell--deal" onClick={handleRowClick} title={deal.company}>
+        <div className="deal-name">{deal.company}</div>
+        <div className="deal-id">{dealNumber(deal.id)}</div>
+      </div>
+      <div className="cell cell--owner" onClick={handleRowClick}>
+        <span className="avatar">{deal.owner.charAt(0)}</span>
+        {deal.owner}
       </div>
       <div className="cell cell--amount" onClick={handleRowClick}>
         {currency.format(deal.amount)}
@@ -73,15 +87,8 @@ function DealRowInner({ id, index, top, height, isSelected, isActive }: Props) {
       <div className="cell cell--licences" onClick={handleRowClick}>
         {deal.licences}
       </div>
-      <div className="cell cell--owner" onClick={handleRowClick}>
-        {deal.owner}
-      </div>
-      <div className="cell cell--stage" onClick={handleRowClick}>
-        <select
-          value={deal.stage}
-          onClick={(e) => e.stopPropagation()}
-          onChange={(e) => moveDeals([id], e.target.value as Stage)}
-        >
+      <div className="cell cell--stage" onClick={(e) => e.stopPropagation()}>
+        <select value={deal.stage} onChange={(e) => moveDeals([id], e.target.value as Stage)}>
           {STAGES.map((s) => (
             <option key={s} value={s}>
               {s}
@@ -89,17 +96,30 @@ function DealRowInner({ id, index, top, height, isSelected, isActive }: Props) {
           ))}
         </select>
       </div>
-      <div className={"cell cell--age" + (stale ? " cell--stale" : "")} onClick={handleRowClick}>
-        {age}d
+      <div className="cell cell--created" onClick={handleRowClick}>
+        {formatShortDate(deal.createdAt)}
+      </div>
+      <div className={"cell cell--activity" + (stale ? " cell--stale" : "")} onClick={handleRowClick}>
+        <span>{formatStageAge(age)}</span>
+        <small>{formatRelativeDay(deal.updatedAt)} · {formatShortDate(deal.updatedAt)}</small>
       </div>
       <div className="cell cell--status">
-        {deal.syncStatus === "saving" && <span className="status status--saving" title="Saving…">●</span>}
+        {deal.syncStatus === "saving" && (
+          <span className="status status--saving" title="Saving…">
+            ●
+          </span>
+        )}
         {deal.syncStatus === "error" && (
           <button className="status status--error" title={deal.lastError} onClick={() => retryDeal(id)}>
             ⚠ retry
           </button>
         )}
-        {deal.syncStatus === "idle" && flash && <span className="status status--flash" title="Updated by a teammate">↻</span>}
+        {deal.syncStatus === "idle" && flash && (
+          <span className="status status--flash" title="Updated by a teammate">
+            ↻
+          </span>
+        )}
+        {deal.syncStatus === "idle" && !flash && <span className="status status--none">—</span>}
       </div>
     </div>
   );

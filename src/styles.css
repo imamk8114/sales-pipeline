@@ -410,6 +410,7 @@ kbd {
 .table-scroll {
   flex: 1;
   overflow-y: auto;
+  overflow-x: auto;
   border: 1px solid var(--border);
   border-radius: 12px 12px 0 0;
   position: relative;
@@ -428,10 +429,11 @@ kbd {
 
 .row {
   display: grid;
-  grid-template-columns: 32px 56px minmax(160px, 1fr) 130px 80px 100px 170px 100px 100px;
+  grid-template-columns: 32px minmax(200px, 1.4fr) 130px 115px 70px 150px 100px 140px 90px;
   align-items: center;
   border-bottom: 1px solid var(--border-soft);
   font-size: 13px;
+  min-width: 1050px;
 }
 
 .row--header {
@@ -439,12 +441,13 @@ kbd {
   top: 0;
   z-index: 2;
   background: var(--bg-panel);
-  font-size: 10.5px;
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-faint);
-  font-weight: 700;
+  font-weight: 800;
   border-bottom: 1px solid var(--border);
+  height: 40px;
 }
 
 .row:not(.row--header) {
@@ -479,7 +482,7 @@ kbd {
 }
 
 .cell {
-  padding: 0 8px;
+  padding: 0 10px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -496,9 +499,55 @@ kbd {
   user-select: none;
 }
 
-.cell--company {
+.row--header .sortable:hover {
+  color: var(--text);
+}
+
+.cell--deal {
   cursor: pointer;
-  font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.deal-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deal-id {
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+.cell--owner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--text-dim);
+  font-size: 12.5px;
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 7px;
+  background: #1d2b42;
+  border: 1px solid var(--border-strong);
+  color: #b9c9df;
+  font-size: 10px;
+  font-weight: 600;
 }
 
 .cell--amount,
@@ -508,22 +557,55 @@ kbd {
   color: var(--text-dim);
 }
 
-.cell--stale {
+.cell--created {
+  color: var(--text-dim);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.cell--activity {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  justify-content: center;
+}
+
+.cell--activity span {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.cell--activity small {
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+.cell--stale span {
   color: var(--warning);
   font-weight: 600;
 }
 
 .cell--stage select {
   width: 100%;
-  padding: 4px 6px;
-  font-size: 12px;
+  background: #121b29;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 5px 8px;
+  font-size: 11px;
   border-radius: 7px;
+  cursor: pointer;
 }
 
 .cell--status {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.status--none {
+  color: var(--text-faint);
+  font-size: 12px;
 }
 
 .status--saving {

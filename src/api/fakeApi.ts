@@ -70,6 +70,7 @@ export function generateDeals(count: number): Deal[] {
     const stage = pick(weightedStages); // most deals sit in active stages; a smaller slice already closed
     const daysAgo = Math.floor(rand() * 120);
     const stageDaysAgo = Math.min(daysAgo, Math.floor(rand() * 45));
+    const createdDaysAgo = daysAgo + Math.floor(rand() * 90); // the lead always existed before its last update
     deals.push({
       id: `deal-${i}`,
       company: `${pick(COMPANY_PREFIXES)} ${pick(COMPANY_SUFFIXES)} #${i}`,
@@ -77,6 +78,7 @@ export function generateDeals(count: number): Deal[] {
       licences: Math.round(5 + rand() * 495),
       owner: pick(OWNERS),
       stage,
+      createdAt: now - createdDaysAgo * 86_400_000,
       updatedAt: now - daysAgo * 86_400_000,
       stageChangedAt: now - stageDaysAgo * 86_400_000,
       syncStatus: "idle",
