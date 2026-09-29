@@ -168,6 +168,15 @@ patched over:
 - **Undo** for a bulk move — "moved 4,000 deals to Lost" is exactly the kind of
   action that deserves a 5-second undo window, especially since it's triggered by
   a single keystroke.
+- **A real bulk-mutation endpoint.** The save queue today still does one PATCH per
+  deal (capped at 6 concurrent) — the right call for a handful of moves, but for a
+  genuine quarter-end "select 8,000, move to Lost" it means the UI updates
+  instantly while the background sync can take several minutes to fully confirm.
+  The user-facing action is already solved (one click, not "a few at a time"), but
+  a production backend should expose `PATCH /deals/bulk { ids, patch }` as a
+  single request instead of N of them, with the server reporting back per-id
+  success/failure so the client-side retry/error UI here could stay almost
+  unchanged — it would just have one round trip to await instead of thousands.
 - **Conflict surfacing beyond last-write-wins** — right now a teammate's change to
   a field you also touched just quietly loses; a real product would want to show
   "Priya also changed this owner 30s ago" rather than silently picking a winner.
