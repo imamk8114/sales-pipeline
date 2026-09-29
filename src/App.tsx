@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { DealTable, DealTableHandle } from "./components/DealTable";
+import { StatsBar } from "./components/StatsBar";
 import { Toolbar } from "./components/Toolbar";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { useKeyboardNav } from "./hooks/useKeyboardNav";
@@ -30,6 +31,7 @@ export default function App() {
           ↑↓ move · space select · shift+↑↓ range · 1–7 move stage · / search · esc clear
         </span>
       </header>
+      <StatsBar />
       <Toolbar
         searchRef={searchRef}
         onSearchFocusChange={setSearchFocused}

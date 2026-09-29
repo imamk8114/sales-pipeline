@@ -1,6 +1,7 @@
 import { memo, useEffect, useState } from "react";
 import { STAGES, Stage } from "../types";
 import {
+  AT_RISK_DAYS,
   moveDeals,
   retryDeal,
   selectRangeTo,
@@ -8,12 +9,7 @@ import {
   toggleSelect,
   useDeal,
 } from "../store/pipelineStore";
-
-const currency = new Intl.NumberFormat("en-IN", {
-  style: "currency",
-  currency: "INR",
-  maximumFractionDigits: 0,
-});
+import { currencyFull as currency } from "../format";
 
 function stageAgeDays(stageChangedAt: number): number {
   return Math.floor((Date.now() - stageChangedAt) / 86_400_000);
@@ -49,7 +45,7 @@ function DealRowInner({ id, index, top, height, isSelected, isActive }: Props) {
   }
 
   const age = stageAgeDays(deal.stageChangedAt);
-  const stale = age >= 14 && deal.stage !== "Won" && deal.stage !== "Lost";
+  const stale = age >= AT_RISK_DAYS && deal.stage !== "Won" && deal.stage !== "Lost";
 
   return (
     <div

@@ -57,8 +57,17 @@ function pick<T>(arr: readonly T[], rng: () => number = rand): T {
 export function generateDeals(count: number): Deal[] {
   const deals: Deal[] = [];
   const now = Date.now();
+  const weightedStages = [
+    ...Array(5).fill(STAGES[0]),
+    ...Array(5).fill(STAGES[1]),
+    ...Array(5).fill(STAGES[2]),
+    ...Array(5).fill(STAGES[3]),
+    ...Array(5).fill(STAGES[4]),
+    ...Array(2).fill(STAGES[5]), // Won
+    ...Array(2).fill(STAGES[6]), // Lost
+  ];
   for (let i = 0; i < count; i++) {
-    const stage = pick(STAGES.slice(0, 5)); // most deals sit in active stages; few pre-seeded Won/Lost
+    const stage = pick(weightedStages); // most deals sit in active stages; a smaller slice already closed
     const daysAgo = Math.floor(rand() * 120);
     const stageDaysAgo = Math.min(daysAgo, Math.floor(rand() * 45));
     deals.push({

@@ -3,7 +3,6 @@ import { STAGES, Stage } from "../types";
 import {
   OWNERS_FOR_FILTER,
   clearSelection,
-  getFilters,
   getTotalCount,
   moveDeals,
   retryAllFailed,
@@ -12,6 +11,7 @@ import {
   useActivity,
   useFailedCount,
   useFilteredIds,
+  useFilters,
   useSelection,
 } from "../store/pipelineStore";
 
@@ -22,7 +22,7 @@ interface Props {
 }
 
 export function Toolbar({ searchRef, onSearchFocusChange, onOpenSettings }: Props) {
-  const [filters, setLocalFilters] = useState(getFilters());
+  const filters = useFilters();
   const selection = useSelection();
   const ids = useFilteredIds();
   const failedCount = useFailedCount();
@@ -31,9 +31,7 @@ export function Toolbar({ searchRef, onSearchFocusChange, onOpenSettings }: Prop
   const total = getTotalCount();
 
   function apply(patch: Partial<typeof filters>) {
-    const next = { ...filters, ...patch };
-    setLocalFilters(next);
-    setFilters(next);
+    setFilters(patch);
   }
 
   return (

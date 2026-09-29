@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { Deal, Stage } from "../types";
+import { Deal, Stage, STAGES } from "../types";
 import { generateDeals, updateDealRemote, subscribeTeammateChanges, TeammateChange } from "../api/fakeApi";
 
 const TOTAL_DEALS = 50_000;
@@ -22,6 +22,101 @@ for (const d of generateDeals(TOTAL_DEALS)) {
 }
 
 export const OWNERS_FOR_FILTER = Array.from(new Set(allIds.map((id) => deals.get(id)!.owner))).sort();
+
+export const AT_RISK_DAYS = 14;
+
+function isTerminal(stage: Stage) {
+  return stage === "Won" || stage === "Lost";
+}
+
+function stageAgeDaysOf(stageChangedAt: number): number {
+  return (Date.now() - stageChangedAt) / 86_400_000;
+}
+
+// ---------------------------------------------------------------------------
+// Dashboard stats (KPI cards + per-stage counts). Kept as a running total
+// that's adjusted by small deltas whenever a deal's stage/amount changes,
+// rather than re-scanned from all 50k deals on every render or every edit.
+// ---------------------------------------------------------------------------
+
+export interface Stats {
+  totalCount: number;
+  openCount: number;
+  atRiskCount: number;
+  openValue: number;
+  stageCounts: Record<Stage, number>;
+}
+
+function computeStatsFromScratch(): Stats {
+  const stageCounts = {} as Record<Stage, number>;
+  for (const s of STAGES) stageCounts[s] = 0;
+  let openCount = 0;
+  let atRiskCount = 0;
+  let openValue = 0;
+  for (const id of allIds) {
+    const d = deals.get(id)!;
+    stageCounts[d.stage]++;
+    if (!isTerminal(d.stage)) {
+      openCount++;
+      openValue += d.amount;
+      if (stageAgeDaysOf(d.stageChangedAt) >= AT_RISK_DAYS) atRiskCount++;
+    }
+  }
+  return { totalCount: allIds.length, openCount, atRiskCount, openValue, stageCounts };
+}
+
+let stats: Stats = computeStatsFromScratch();
+const statsListeners = new Set<() => void>();
+
+function notifyStats() {
+  statsListeners.forEach((cb) => cb());
+}
+
+export function useStats(): Stats {
+  return useSyncExternalStore(
+    (cb) => {
+      statsListeners.add(cb);
+      return () => statsListeners.delete(cb);
+    },
+    () => stats
+  );
+}
+
+/** Adjusts the running stats for a single deal's before/after state. */
+function updateStatsForChange(before: Deal, after: Deal) {
+  let changed = false;
+  const stageCounts = { ...stats.stageCounts };
+  let { openCount, atRiskCount, openValue } = stats;
+
+  if (before.stage !== after.stage) {
+    stageCounts[before.stage]--;
+    stageCounts[after.stage]++;
+    const wasOpen = !isTerminal(before.stage);
+    const isOpen = !isTerminal(after.stage);
+    if (wasOpen && stageAgeDaysOf(before.stageChangedAt) >= AT_RISK_DAYS) atRiskCount--;
+    if (wasOpen && !isOpen) openValue -= before.amount;
+    if (!wasOpen && isOpen) openValue += after.amount;
+    if (wasOpen !== isOpen) openCount += isOpen ? 1 : -1;
+    changed = true;
+  } else if (before.amount !== after.amount && !isTerminal(after.stage)) {
+    openValue += after.amount - before.amount;
+    changed = true;
+  }
+
+  if (changed) {
+    stats = { totalCount: stats.totalCount, openCount, atRiskCount, openValue, stageCounts };
+    notifyStats();
+  }
+}
+
+// Natural day-rollover means a deal can cross the "at risk" age threshold
+// without anyone touching it. A full rescan is a few ms over 50k rows, so a
+// low-frequency timer is cheap insurance against that drift; it's not what
+// keeps the cards correct moment-to-moment (the deltas above do that).
+setInterval(() => {
+  stats = computeStatsFromScratch();
+  notifyStats();
+}, 60_000);
 
 // per-row listeners
 const rowListeners = new Map<string, Set<() => void>>();
@@ -160,6 +255,16 @@ export function useFilteredIds(): string[] {
 
 export function getFilters() {
   return filters;
+}
+
+export function useFilters(): Filters {
+  return useSyncExternalStore(
+    (cb) => {
+      listListeners.add(cb);
+      return () => listListeners.delete(cb);
+    },
+    () => filters
+  );
 }
 
 export function setFilters(patch: Partial<Filters>) {
@@ -368,13 +473,15 @@ export function moveDeals(ids: string[], stage: Stage) {
       errorCount--;
       notifyCount();
     }
-    patchDeal(id, {
+    const before = d;
+    const after = patchDeal(id, {
       stage,
       stageChangedAt: now,
       updatedAt: now,
       syncStatus: "saving",
       lastError: undefined,
-    });
+    })!;
+    updateStatsForChange(before, after);
     notifyRow(id);
     queue.push({ id, patch: { stage }, attempt: 0 });
   }
@@ -431,12 +538,14 @@ export function startTeammateSimulation() {
       // user just made that hasn't confirmed yet.
       if (d.syncStatus === "saving") continue;
       const now = Date.now();
-      patchDeal(id, {
+      const before = d;
+      const after = patchDeal(id, {
         ...patch,
         updatedAt: now,
         remoteFlashAt: now,
         ...(patch.stage ? { stageChangedAt: now } : {}),
-      });
+      })!;
+      updateStatsForChange(before, after);
       notifyRow(id);
     }
   });

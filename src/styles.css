@@ -54,6 +54,93 @@ body,
   color: var(--text-dim);
 }
 
+.stats {
+  flex-shrink: 0;
+  padding: 8px 16px 0;
+}
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.kpi-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.kpi-card--warning {
+  border-color: rgba(232, 165, 61, 0.4);
+}
+
+.kpi-card__label {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.kpi-card__value {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-card--warning .kpi-card__value {
+  color: var(--warning);
+}
+
+.kpi-card__sub {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.stage-chip-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.stage-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.stage-chip:hover {
+  border-color: var(--accent);
+}
+
+.stage-chip--active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+}
+
+.stage-chip__count {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.stage-chip--active .stage-chip__count {
+  color: var(--text);
+}
+
 .toolbar {
   flex-shrink: 0;
   padding: 8px 16px;

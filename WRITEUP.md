@@ -25,8 +25,13 @@ wins on every constraint that actually matters here:
   can only show as a badge on a card, not as an ordering.
 
 The trade-off: a board gives a better at-a-glance sense of "how much is in each
-stage" and feels more native for a *small* team eyeballing a *small* pipeline. At
-this scale, I don't think that's the job to be done — the job is triage and bulk
+stage" and feels more native for a *small* team eyeballing a *small* pipeline. I
+recovered most of that at-a-glance value without the board's cost: a row of KPI
+cards (all deals, open pipeline, at-risk count, open pipeline value) and a row of
+clickable per-stage count chips sit above the table, so "how much is in each
+stage" is a glance, not a scroll — and clicking a chip filters the table to that
+stage, which a board gives you for free by construction. At this scale, I still
+don't think a literal board is the job to be done — the job is triage and bulk
 hygiene, which a sortable/filterable list does better. I'd revisit this if the team
 wanted a literal, low-volume "my 20 active deals" view — see What I'd do with more
 time.
@@ -144,6 +149,14 @@ patched over:
   single array filter+sort over 50k items (a few ms), and it only runs when the
   user changes a filter/search/sort — never on a per-row edit, per the "don't
   reorder live" decision above.
+- **KPI/stage-count cards are maintained as running totals, not recomputed.**
+  A naive version would rescan all 50,000 deals to recompute "open pipeline
+  value" or per-stage counts on every render. Instead the store keeps one small
+  `Stats` object and adjusts it by a delta whenever a deal's stage or amount
+  actually changes (one move, one teammate edit → a handful of arithmetic ops),
+  so the cards stay live without an O(n) scan in the hot path. A full rescan
+  only runs once at startup and once a minute after, as cheap insurance against
+  a deal naturally aging past the "at risk" threshold without being touched.
 - **Bounded concurrency on saves**, so a 4,000-row bulk move doesn't open 4,000
   sockets at once; it drains through 6 at a time.
 
