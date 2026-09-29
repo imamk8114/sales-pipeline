@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getApiConfig, setApiConfig } from "../api/fakeApi";
 
 interface Props {
@@ -7,6 +7,14 @@ interface Props {
 
 export function SettingsPanel({ onClose }: Props) {
   const [cfg, setCfg] = useState(getApiConfig());
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
 
   function update(patch: Partial<typeof cfg>) {
     const next = { ...cfg, ...patch };
@@ -17,7 +25,12 @@ export function SettingsPanel({ onClose }: Props) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Simulate network conditions</h2>
+        <div className="modal__header">
+          <h2>Simulate network conditions</h2>
+          <button className="modal__close" onClick={onClose} aria-label="Close">
+            ✕
+          </button>
+        </div>
         <p className="modal__hint">
           There is no real backend. These sliders control the fake API that every save and
           teammate update goes through.

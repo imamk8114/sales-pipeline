@@ -721,8 +721,35 @@ kbd {
 }
 
 .modal h2 {
-  margin-top: 0;
+  margin: 0;
   font-size: 15px;
+}
+
+.modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.modal__close {
+  flex-shrink: 0;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal__close:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
 }
 
 .modal__hint {
