@@ -104,6 +104,35 @@ An activity log (small, collapsible, off by default) records failures and bulk
 actions with timestamps, for anyone who wants an audit trail rather than just the
 current state.
 
+## Surviving a reload (local persistence)
+
+"There's no backend" doesn't mean a reload should throw the rep's work away.
+Every deal is mirrored into this browser's **IndexedDB**, so closing the tab or
+hitting refresh restores the pipeline exactly as it was left — including deals
+still sitting in a failed/needs-retry state — rather than regenerating a fresh
+50,000-deal set from scratch.
+
+A few decisions made this cheap instead of a performance risk:
+
+- **Writes are batched and debounced, not per-field.** A single mutation marks
+  that deal "dirty" and a shared 800ms timer flushes every dirty deal in one
+  IndexedDB transaction. Moving 8,000 deals to Lost still results in one write
+  transaction shortly after, not 8,000 — the same "don't hammer it per-row"
+  principle as the save queue itself.
+- **The first paint never waits on IndexedDB.** The app generates its
+  (deterministically seeded) baseline synchronously, same as before, so there's
+  no loading spinner on startup. A background read from IndexedDB then quietly
+  swaps in whatever was persisted, correcting the view moments later if there's
+  prior state to restore — the same "patch in place, don't repaint everything"
+  mechanism used for teammate updates.
+- **An interrupted save doesn't get stuck.** If you reload while a deal is
+  mid-save, the in-flight network request is gone — nothing will ever resolve
+  it — so on restore, any deal still marked "saving" is automatically requeued
+  for a fresh save attempt instead of showing a spinner that spins forever.
+- **A visible way to start over.** "Reset demo data" in the API simulator panel
+  clears IndexedDB and reloads, for anyone testing who wants a clean pipeline
+  again rather than accumulating changes indefinitely.
+
 ## How teammates' concurrent changes are handled
 
 A fake "teammates" feed mutates a small random batch of deals on an interval

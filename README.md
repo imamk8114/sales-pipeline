@@ -24,6 +24,12 @@ failure, and surfaced with a per-row status indicator plus a global "N failed sa
 action. A "Simulate network…" panel lets you crank up latency/failure rate and
 teammate-edit frequency live to see how the UI holds up.
 
+Your changes are written to this browser's IndexedDB as you make them, so
+reloading the page (or closing and reopening the tab) picks up right where you
+left off — moves, retries, and any still-failed saves all survive a reload,
+instead of the pipeline resetting to a fresh generated set. "Reset demo data"
+in the API simulator panel wipes local storage and starts over.
+
 ## Keyboard
 
 - `↑` / `↓` — move the active row

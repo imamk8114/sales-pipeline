@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { Deal, Stage, STAGES } from "../types";
 import { generateDeals, updateDealRemote, subscribeTeammateChanges, TeammateChange } from "../api/fakeApi";
+import { clearPersistedDeals, loadPersistedDeals, persistDeals } from "../api/db";
 
 const TOTAL_DEALS = 50_000;
 const MAX_CONCURRENT_SAVES = 6;
@@ -160,7 +161,38 @@ function patchDeal(id: string, patch: Partial<Deal>): Deal | undefined {
   if (!current) return undefined;
   const next = { ...current, ...patch };
   deals.set(id, next);
+  markDirty(id);
   return next;
+}
+
+// ---------------------------------------------------------------------------
+// Local persistence (IndexedDB): survives a reload without any backend.
+// Writes are batched — a fast bulk move of thousands of rows would otherwise
+// hit IndexedDB thousands of times; instead we track which ids changed and
+// flush them in one transaction shortly after things go quiet.
+// ---------------------------------------------------------------------------
+
+const dirtyIds = new Set<string>();
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+function markDirty(id: string) {
+  dirtyIds.add(id);
+  if (flushTimer) return;
+  flushTimer = setTimeout(() => {
+    flushTimer = null;
+    flushDirty();
+  }, 800);
+}
+
+function flushDirty() {
+  if (dirtyIds.size === 0) return;
+  const batch: Deal[] = [];
+  for (const id of dirtyIds) {
+    const d = deals.get(id);
+    if (d) batch.push(d);
+  }
+  dirtyIds.clear();
+  void persistDeals(batch);
 }
 
 export function useDeal(id: string): Deal | undefined {
@@ -594,6 +626,73 @@ export function startTeammateSimulation() {
 
 export function getTotalCount() {
   return allIds.length;
+}
+
+// ---------------------------------------------------------------------------
+// Hydration: on startup, swap the freshly generated seed data for whatever
+// was persisted from the last session, if anything. The synchronous
+// generation above still runs first so the app paints instantly; this just
+// corrects it moments later rather than blocking the first render on an
+// IndexedDB round trip.
+// ---------------------------------------------------------------------------
+
+async function hydrateFromPersistence() {
+  const persisted = await loadPersistedDeals();
+
+  if (persisted.length === 0) {
+    // First time ever in this browser — seed IndexedDB with the generated set.
+    void persistDeals(Array.from(deals.values()));
+    return;
+  }
+
+  let changed = 0;
+  let requeued = 0;
+  for (const pd of persisted) {
+    if (!deals.has(pd.id)) continue; // ignore stray records from an old schema
+    // A save that was "in flight" can't have survived the reload — the
+    // original request is gone — so requeue it instead of leaving the row
+    // stuck on a spinner that will never resolve on its own.
+    const wasSaving = pd.syncStatus === "saving";
+    const restored: Deal = wasSaving ? { ...pd, syncStatus: "idle" } : pd;
+    deals.set(pd.id, restored);
+    changed++;
+    if (wasSaving) {
+      requeued++;
+      queue.push({ id: pd.id, patch: { stage: restored.stage, owner: restored.owner }, attempt: 0 });
+    }
+    if (restored.syncStatus === "error") errorCount++;
+  }
+
+  if (changed === 0) return;
+
+  stats = computeStatsFromScratch();
+  notifyStats();
+  if (errorCount > 0) notifyCount();
+  recomputeView();
+  for (const id of allIds) notifyRow(id);
+  if (requeued > 0) {
+    savingCount += requeued;
+    notifySaving();
+    pump();
+  }
+}
+
+void hydrateFromPersistence();
+
+/** Wipes local persistence and reloads to a clean, freshly generated pipeline. */
+export async function resetLocalData() {
+  await clearPersistedDeals();
+  window.location.reload();
+}
+
+if (typeof window !== "undefined") {
+  // Best-effort: flush any pending writes before the tab goes away. IndexedDB
+  // writes are async and can't be guaranteed to finish during unload, but the
+  // 800ms debounce means there's rarely more than a moment of change at risk.
+  window.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushDirty();
+  });
+  window.addEventListener("beforeunload", flushDirty);
 }
 
 if (import.meta.env.DEV) {

@@ -778,3 +778,10 @@ kbd {
   align-items: center;
   gap: 8px;
 }
+
+.field__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}

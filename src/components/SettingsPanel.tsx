@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getApiConfig, setApiConfig } from "../api/fakeApi";
+import { resetLocalData } from "../store/pipelineStore";
 
 interface Props {
   onClose: () => void;
@@ -107,9 +108,29 @@ export function SettingsPanel({ onClose }: Props) {
           />
         </label>
 
-        <button className="btn btn--primary" onClick={onClose}>
-          Done
-        </button>
+        <hr />
+
+        <p className="modal__hint">
+          Your moves, retries, and any failed saves are written to this browser's IndexedDB, so
+          reloading the page picks up right where you left off instead of generating a fresh
+          pipeline.
+        </p>
+
+        <div className="field__actions">
+          <button className="btn btn--primary" onClick={onClose}>
+            Done
+          </button>
+          <button
+            className="btn btn--danger"
+            onClick={() => {
+              if (confirm("Reset all local data and reload with a fresh pipeline?")) {
+                void resetLocalData();
+              }
+            }}
+          >
+            Reset demo data
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -14,7 +14,7 @@ function SyncPill() {
     return (
       <button className="connection-pill connection-pill--error" onClick={() => retryAllFailed()}>
         <span className="dot" />
-        {failed} save{failed === 1 ? "" : "s"} need retry
+        {failed} save{failed === 1 ? "" : "s"} {failed === 1 ? "needs" : "need"} retry
       </button>
     );
   }
