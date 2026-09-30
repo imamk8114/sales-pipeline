@@ -1,6 +1,12 @@
 import { useSyncExternalStore } from "react";
 import { Deal, Stage, STAGES } from "../types";
-import { generateDeals, updateDealRemote, subscribeTeammateChanges, TeammateChange } from "../api/fakeApi";
+import {
+  generateDeals,
+  updateDealRemote,
+  subscribeTeammateChanges,
+  randomTeammateChangeFor,
+  TeammateChange,
+} from "../api/fakeApi";
 import { clearPersistedDeals, loadPersistedDeals, persistDeals } from "../api/db";
 
 const TOTAL_DEALS = 50_000;
@@ -619,26 +625,55 @@ export function useFailedCount(): number {
 // Simulated teammates editing the same pipeline concurrently
 // ---------------------------------------------------------------------------
 
+/**
+ * Merges one simulated teammate edit into the store — shared by the
+ * interval-driven feed and the manual "trigger a teammate edit now" demo
+ * control so both go through the exact same local-wins/stats/flash logic.
+ * Returns the id actually touched, or null if the edit was dropped (deal
+ * missing, or mid-save and protected by "local wins").
+ */
+function applyTeammateChange(id: string, patch: Partial<Deal>): string | null {
+  const d = deals.get(id);
+  if (!d) return null;
+  // Local edits win: don't let a simulated teammate clobber a save the
+  // user just made that hasn't confirmed yet.
+  if (d.syncStatus === "saving") return null;
+  const now = Date.now();
+  const before = d;
+  const after = patchDeal(id, {
+    ...patch,
+    updatedAt: now,
+    remoteFlashAt: now,
+    ...(patch.stage ? { stageChangedAt: now } : {}),
+  })!;
+  updateStatsForChange(before, after);
+  notifyRow(id);
+  return id;
+}
+
 export function startTeammateSimulation() {
   return subscribeTeammateChanges(allIds, (changes: TeammateChange[]) => {
-    for (const { id, patch } of changes) {
-      const d = deals.get(id);
-      if (!d) continue;
-      // Local edits win: don't let a simulated teammate clobber a save the
-      // user just made that hasn't confirmed yet.
-      if (d.syncStatus === "saving") continue;
-      const now = Date.now();
-      const before = d;
-      const after = patchDeal(id, {
-        ...patch,
-        updatedAt: now,
-        remoteFlashAt: now,
-        ...(patch.stage ? { stageChangedAt: now } : {}),
-      })!;
-      updateStatsForChange(before, after);
-      notifyRow(id);
-    }
+    for (const { id, patch } of changes) applyTeammateChange(id, patch);
   });
+}
+
+/**
+ * Demo/testing control: fires one simulated teammate edit immediately,
+ * instead of waiting on the random interval — useful for reliably recording
+ * a "teammate edits the same deal I'm looking at" scenario, since the
+ * interval-driven feed picks uniformly from all 50,000 deals and would take
+ * a long time to land on any one specific row by chance.
+ *
+ * Targets the given id, or the currently active (keyboard-cursor/last-
+ * clicked) row, or a random currently-filtered row, in that order of
+ * preference. Returns the id it touched, or null if there was nothing to
+ * target or the target was mid-save and protected by "local wins."
+ */
+export function triggerTeammateEdit(id?: string): string | null {
+  const targetId = id ?? activeId ?? filteredIds[Math.floor(Math.random() * filteredIds.length)];
+  if (!targetId) return null;
+  const { patch } = randomTeammateChangeFor(targetId);
+  return applyTeammateChange(targetId, patch);
 }
 
 export function getTotalCount() {

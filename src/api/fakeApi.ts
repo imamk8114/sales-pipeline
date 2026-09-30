@@ -134,6 +134,18 @@ export async function updateDealRemote(
 
 export type TeammateChange = { id: string; patch: Partial<Deal> };
 
+/** A single random teammate-style edit for one deal (stage / owner / amount). */
+export function randomTeammateChangeFor(id: string): TeammateChange {
+  const roll = Math.random();
+  if (roll < 0.6) {
+    return { id, patch: { stage: pick(STAGES, Math.random) } };
+  }
+  if (roll < 0.85) {
+    return { id, patch: { owner: pick(OWNERS, Math.random) } };
+  }
+  return { id, patch: { amount: Math.round((5_000 + Math.random() * 495_000) / 500) * 500 } };
+}
+
 /**
  * Starts a fake "teammates editing the same pipeline" feed. Every tick it mutates
  * a small random batch of deals (stage / owner change) and calls back with the
@@ -152,17 +164,7 @@ export function subscribeTeammateChanges(
       const changes: TeammateChange[] = [];
       for (let i = 0; i < config.teammateBatchSize; i++) {
         const id = allIds[Math.floor(Math.random() * allIds.length)];
-        const roll = Math.random();
-        if (roll < 0.6) {
-          changes.push({ id, patch: { stage: pick(STAGES, Math.random) } });
-        } else if (roll < 0.85) {
-          changes.push({ id, patch: { owner: pick(OWNERS, Math.random) } });
-        } else {
-          changes.push({
-            id,
-            patch: { amount: Math.round((5_000 + Math.random() * 495_000) / 500) * 500 },
-          });
-        }
+        changes.push(randomTeammateChangeFor(id));
       }
       onChange(changes);
     }

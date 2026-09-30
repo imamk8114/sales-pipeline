@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getApiConfig, setApiConfig } from "../api/fakeApi";
-import { resetLocalData } from "../store/pipelineStore";
+import { getDeal, resetLocalData, triggerTeammateEdit } from "../store/pipelineStore";
 
 interface Props {
   onClose: () => void;
@@ -8,6 +8,7 @@ interface Props {
 
 export function SettingsPanel({ onClose }: Props) {
   const [cfg, setCfg] = useState(getApiConfig());
+  const [lastTriggered, setLastTriggered] = useState<string | null>(null);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -107,6 +108,29 @@ export function SettingsPanel({ onClose }: Props) {
             onChange={(e) => update({ teammateBatchSize: Number(e.target.value) })}
           />
         </label>
+
+        <div className="field">
+          <button
+            className="btn"
+            onClick={() => {
+              const id = triggerTeammateEdit();
+              setLastTriggered(id ? (getDeal(id)?.company ?? id) : "nothing to edit");
+            }}
+          >
+            Simulate a teammate edit now
+          </button>
+          <p className="modal__hint" style={{ marginTop: 8, marginBottom: 0 }}>
+            Fires one teammate edit immediately instead of waiting on the random interval above —
+            targets whichever row you last clicked/selected in the table, so you can reliably
+            demo "we're both editing the same deal" instead of waiting on 1-in-50,000 odds.
+            {lastTriggered && (
+              <>
+                {" "}
+                Just edited: <strong>{lastTriggered}</strong>.
+              </>
+            )}
+          </p>
+        </div>
 
         <hr />
 
