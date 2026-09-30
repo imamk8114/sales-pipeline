@@ -1,7 +1,16 @@
 import { useRef, useImperativeHandle, forwardRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { DealRow } from "./DealRow";
-import { SortField, setSort, useActiveId, useFilteredIds, useSelection, getSort } from "../store/pipelineStore";
+import {
+  SortField,
+  clearSelection,
+  selectAllFiltered,
+  setSort,
+  useActiveId,
+  useFilteredIds,
+  useSelection,
+  getSort,
+} from "../store/pipelineStore";
 
 const ROW_HEIGHT = 52;
 
@@ -9,15 +18,39 @@ export interface DealTableHandle {
   scrollToId: (id: string) => void;
 }
 
-function Header() {
+interface HeaderProps {
+  ids: string[];
+  selection: Set<string>;
+}
+
+function Header({ ids, selection }: HeaderProps) {
   const { field: sortField, dir: sortDir } = getSort();
   function arrow(f: SortField) {
     if (sortField !== f) return "";
     return sortDir === "asc" ? " ↑" : " ↓";
   }
+
+  // Filters clear the selection, so a selection can never outlive the filtered
+  // set it was made in — meaning "same size" is a correct, O(1) stand-in for
+  // "every currently-shown deal is selected" (no need to check membership one
+  // by one across up to 50k rows).
+  const allSelected = ids.length > 0 && selection.size === ids.length;
+  const someSelected = selection.size > 0 && !allSelected;
+
   return (
     <div className="row row--header" role="row">
-      <div className="cell cell--check" />
+      <div className="cell cell--check">
+        <input
+          type="checkbox"
+          checked={allSelected}
+          ref={(el) => {
+            if (el) el.indeterminate = someSelected;
+          }}
+          onChange={() => (allSelected ? clearSelection() : selectAllFiltered())}
+          aria-label={allSelected ? "Deselect all shown deals" : "Select all shown deals"}
+          title={allSelected ? "Deselect all shown" : `Select all ${ids.length.toLocaleString()} shown`}
+        />
+      </div>
       <div className="cell cell--deal sortable" onClick={() => setSort("company")}>
         Deal{arrow("company")}
       </div>
@@ -62,7 +95,7 @@ export const DealTable = forwardRef<DealTableHandle>(function DealTable(_props, 
 
   return (
     <div className="table-wrap">
-      <Header />
+      <Header ids={ids} selection={selection} />
       <div ref={parentRef} className="table-scroll" role="rowgroup">
         <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
           {items.map((vi) => {
