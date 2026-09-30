@@ -6,10 +6,12 @@ import {
   clearSelection,
   getTotalCount,
   moveDeals,
+  retryAllFailed,
   selectAllFiltered,
   setFilters,
   setSort,
   useActivity,
+  useFailedCount,
   useFilteredIds,
   useFilters,
   useSelection,
@@ -34,6 +36,7 @@ export function Toolbar({ searchRef, onSearchFocusChange }: Props) {
   const selection = useSelection();
   const ids = useFilteredIds();
   const activity = useActivity();
+  const failedCount = useFailedCount();
   const { field: sortField } = useSort();
   const [showActivity, setShowActivity] = useState(false);
   const total = getTotalCount();
@@ -91,6 +94,25 @@ export function Toolbar({ searchRef, onSearchFocusChange }: Props) {
           Activity {activity.length > 0 && `(${activity.length})`}
         </button>
       </div>
+
+      {filters.failedOnly && (
+        <div className="failed-bar">
+          <span>
+            Showing <strong>{ids.length.toLocaleString()}</strong> deal{ids.length === 1 ? "" : "s"} that failed to
+            save
+          </span>
+          <div className="failed-bar__actions">
+            {failedCount > 0 && (
+              <button className="btn btn--small btn--danger" onClick={() => retryAllFailed()}>
+                Retry all {failedCount.toLocaleString()}
+              </button>
+            )}
+            <button className="btn btn--small" onClick={() => apply({ failedOnly: false })}>
+              Exit (show all deals)
+            </button>
+          </div>
+        </div>
+      )}
 
       {showActivity && (
         <div className="activity-panel">

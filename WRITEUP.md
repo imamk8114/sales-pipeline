@@ -93,9 +93,14 @@ for a simulated network save. The queue:
   giving up — most of the simulated 1-in-10 failures never need a human to notice;
 - on a final failure, marks the row with a **visible ⚠ retry control** (not a
   toast that vanishes and is forgotten — this is the literal "I moved a deal, it
-  didn't save, and nobody told me" complaint), and adds a global **"Retry N failed
-  saves"** button in the toolbar so a rep doesn't have to go hunting for red rows
-  in a 50,000-row table;
+  didn't save, and nobody told me" complaint), and turns the header's sync pill
+  into **"N saves need retry."** Clicking it filters the table down to exactly
+  those N rows (clearing any other filter), with a "Retry all N" action right
+  there and an "Exit" to go back to the full pipeline. The first version of this
+  had the pill just call retry-all directly — it fixed the data but not the
+  actual complaint, since a rep still had no way to see *which* deals it meant in
+  a 50,000-row table. Fixed once that gap was pointed out; verified live that the
+  filtered view lands on exactly the failed rows;
 - keeps the deal showing its optimistic (moved) value even while failed, rather
   than snapping back — the rep's intent stays visible; they retry in place instead
   of re-doing the move.

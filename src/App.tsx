@@ -4,7 +4,7 @@ import { StatsBar } from "./components/StatsBar";
 import { Toolbar } from "./components/Toolbar";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { useKeyboardNav } from "./hooks/useKeyboardNav";
-import { retryAllFailed, startTeammateSimulation, useFailedCount, useSavingCount } from "./store/pipelineStore";
+import { startTeammateSimulation, useFailedCount, useSavingCount, viewFailedDeals } from "./store/pipelineStore";
 
 function SyncPill() {
   const failed = useFailedCount();
@@ -12,7 +12,11 @@ function SyncPill() {
 
   if (failed > 0) {
     return (
-      <button className="connection-pill connection-pill--error" onClick={() => retryAllFailed()}>
+      <button
+        className="connection-pill connection-pill--error"
+        onClick={() => viewFailedDeals()}
+        title="Show which deals failed to save"
+      >
         <span className="dot" />
         {failed} save{failed === 1 ? "" : "s"} {failed === 1 ? "needs" : "need"} retry
       </button>

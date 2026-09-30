@@ -212,9 +212,11 @@ export interface Filters {
   stage: Stage | "all";
   owner: string | "all";
   search: string;
+  /** When true, show only deals whose last save failed — regardless of stage/owner/search. */
+  failedOnly: boolean;
 }
 
-let filters: Filters = { stage: "all", owner: "all", search: "" };
+let filters: Filters = { stage: "all", owner: "all", search: "", failedOnly: false };
 let sort: { field: SortField; dir: "asc" | "desc" } = { field: "stageAge", dir: "desc" };
 
 let filteredIds: string[] = allIds.slice();
@@ -227,9 +229,10 @@ function stageAgeDays(d: Deal): number {
 function recomputeView() {
   const q = filters.search.trim().toLowerCase();
   let ids = allIds;
-  if (filters.stage !== "all" || filters.owner !== "all" || q) {
+  if (filters.stage !== "all" || filters.owner !== "all" || filters.failedOnly || q) {
     ids = allIds.filter((id) => {
       const d = deals.get(id)!;
+      if (filters.failedOnly && d.syncStatus !== "error") return false;
       if (filters.stage !== "all" && d.stage !== filters.stage) return false;
       if (filters.owner !== "all" && d.owner !== filters.owner) return false;
       if (q && !d.company.toLowerCase().includes(q)) return false;
@@ -306,6 +309,11 @@ export function setFilters(patch: Partial<Filters>) {
   filters = { ...filters, ...patch };
   clearSelection();
   recomputeView();
+}
+
+/** Jumps straight to exactly the deals that failed to save, clearing any other filter. */
+export function viewFailedDeals() {
+  setFilters({ failedOnly: true, stage: "all", owner: "all", search: "" });
 }
 
 export function getSort() {
