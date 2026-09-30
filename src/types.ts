@@ -27,6 +27,15 @@ export interface Deal {
   retryCount: number;
   /** true for a few seconds after a remote (teammate) change, drives a subtle highlight */
   remoteFlashAt?: number;
+  /**
+   * Bumped every time a save is *initiated* for this deal (a move or a manual
+   * retry — not the automatic backoff retries of the same save). A queued
+   * save's response is only applied if this still matches the deal's current
+   * version when the response comes back; otherwise a newer edit has already
+   * superseded it and the stale response is a no-op. Prevents a slow/failed
+   * save for an old value from clobbering a newer edit that already saved.
+   */
+  version: number;
 }
 
 export interface FakeApiConfig {

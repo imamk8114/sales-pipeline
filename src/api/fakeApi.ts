@@ -83,6 +83,7 @@ export function generateDeals(count: number): Deal[] {
       stageChangedAt: now - stageDaysAgo * 86_400_000,
       syncStatus: "idle",
       retryCount: 0,
+      version: 0,
     });
   }
   return deals;

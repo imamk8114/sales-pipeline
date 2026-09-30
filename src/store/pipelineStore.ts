@@ -445,6 +445,8 @@ interface QueueItem {
   id: string;
   patch: Partial<Pick<Deal, "stage" | "owner">>;
   attempt: number;
+  /** The deal's version at the moment this save was initiated (see Deal.version). */
+  version: number;
 }
 
 const queue: QueueItem[] = [];
@@ -490,22 +492,26 @@ function pump() {
     const item = queue.shift()!;
     const deal = deals.get(item.id);
     if (!deal) continue;
+    if ((deal.version ?? 0) !== item.version) {
+      // A newer edit has already superseded this save before it even went
+      // out — that newer edit's own queue item will handle syncStatus/
+      // savingCount when it settles, so this one is dropped without ever
+      // touching the network or the counters.
+      continue;
+    }
     activeSaves++;
-    patchDeal(item.id, { syncStatus: "saving" });
-    notifyRow(item.id);
     updateDealRemote(item.id, item.patch)
       .then(() => {
         const d = deals.get(item.id);
-        if (d) {
-          patchDeal(item.id, { syncStatus: "idle", lastError: undefined, retryCount: 0 });
-          notifyRow(item.id);
-          savingCount--;
-          notifySaving();
-        }
+        if (!d || (d.version ?? 0) !== item.version) return; // superseded while in flight; ignore
+        patchDeal(item.id, { syncStatus: "idle", lastError: undefined, retryCount: 0 });
+        notifyRow(item.id);
+        savingCount--;
+        notifySaving();
       })
       .catch((err: Error) => {
         const d = deals.get(item.id);
-        if (!d) return;
+        if (!d || (d.version ?? 0) !== item.version) return; // superseded while in flight; ignore
         if (item.attempt < 2) {
           // automatic retry with backoff, transparent to the user
           setTimeout(() => {
@@ -543,16 +549,18 @@ export function moveDeals(ids: string[], stage: Stage) {
       notifySaving();
     }
     const before = d;
+    const version = (d.version ?? 0) + 1;
     const after = patchDeal(id, {
       stage,
       stageChangedAt: now,
       updatedAt: now,
       syncStatus: "saving",
       lastError: undefined,
+      version,
     })!;
     updateStatsForChange(before, after);
     notifyRow(id);
-    queue.push({ id, patch: { stage }, attempt: 0 });
+    queue.push({ id, patch: { stage }, attempt: 0, version });
   }
   pushActivity(`Moved ${ids.length} deal${ids.length === 1 ? "" : "s"} → ${stage}`);
   pump();
@@ -569,9 +577,10 @@ export function retryDeal(id: string) {
     savingCount++;
     notifySaving();
   }
-  patchDeal(id, { syncStatus: "saving" });
+  const version = (d.version ?? 0) + 1;
+  patchDeal(id, { syncStatus: "saving", version });
   notifyRow(id);
-  queue.push({ id, patch: { stage: d.stage, owner: d.owner }, attempt: 0 });
+  queue.push({ id, patch: { stage: d.stage, owner: d.owner }, attempt: 0, version });
   pump();
 }
 
@@ -653,12 +662,16 @@ async function hydrateFromPersistence() {
     // original request is gone — so requeue it instead of leaving the row
     // stuck on a spinner that will never resolve on its own.
     const wasSaving = pd.syncStatus === "saving";
-    const restored: Deal = wasSaving ? { ...pd, syncStatus: "idle" } : pd;
+    // Re-enqueuing keeps it "saving" (not idle) immediately, same as any other
+    // save-in-progress elsewhere in the app — it'll actually go out once the
+    // concurrency cap gives it a turn.
+    const version = wasSaving ? (pd.version ?? 0) + 1 : (pd.version ?? 0);
+    const restored: Deal = wasSaving ? { ...pd, syncStatus: "saving", version } : pd;
     deals.set(pd.id, restored);
     changed++;
     if (wasSaving) {
       requeued++;
-      queue.push({ id: pd.id, patch: { stage: restored.stage, owner: restored.owner }, attempt: 0 });
+      queue.push({ id: pd.id, patch: { stage: restored.stage, owner: restored.owner }, attempt: 0, version });
     }
     if (restored.syncStatus === "error") errorCount++;
   }
