@@ -104,6 +104,20 @@ An activity log (small, collapsible, off by default) records failures and bulk
 actions with timestamps, for anyone who wants an audit trail rather than just the
 current state.
 
+**A subtler failure mode:** re-editing a deal while its own previous save is still
+in flight (e.g. you move it, then change your mind before that save confirms) used
+to create two independent, unrelated save attempts for the same row. Whichever one
+settled *last* won — a slow failure for the value you'd already moved away from
+could flip the row to "error" even though what's on screen right now saved fine a
+moment earlier, and the reverse (a stale success arriving after a real failure)
+could silently erase a legitimate error. Every save now carries the deal's version
+number at the moment it was initiated; a response is only applied if that version
+still matches the deal's current version when it comes back, so a superseded save
+becomes a silent no-op instead of clobbering whatever happened after it. I caught
+this by tracing the queue code while reasoning about "what if a teammate — or I —
+edit a row mid-bulk-move," not from a bug report, and verified both directions
+(stale failure, stale success) live before considering it fixed.
+
 ## Surviving a reload (local persistence)
 
 "There's no backend" doesn't mean a reload should throw the rep's work away.
