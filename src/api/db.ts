@@ -69,6 +69,21 @@ export async function persistDeals(deals: Deal[]): Promise<void> {
   }
 }
 
+/**
+ * Closes the shared connection, if one is open. The app itself never needs
+ * this (the connection just lives for the page's lifetime), but tests that
+ * repeatedly create and delete the database in the same process do: an
+ * IndexedDB connection left open blocks a subsequent deleteDatabase() call
+ * indefinitely (it fires "blocked", not "success"), which otherwise
+ * deadlocks a test suite that resets between cases.
+ */
+export async function closeDB(): Promise<void> {
+  if (!dbPromise) return;
+  const db = await dbPromise;
+  db.close();
+  dbPromise = null;
+}
+
 /** Wipes all persisted deals (used by "Reset demo data"). */
 export async function clearPersistedDeals(): Promise<void> {
   if (!hasIndexedDB) return;
