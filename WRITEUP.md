@@ -234,8 +234,11 @@ patched over:
   localStorage) so a rep's workspace survives a refresh.
 - **Real virtualized column resizing/reordering** and CSV export for the "get
   data out" case that always comes up in practice.
-- **Automated tests** — I stress-tested the queue, retry, and teammate-merge logic
-  by hand via the browser console during development; given more time I'd cover
-  the store (`pipelineStore.ts`) with unit tests, especially the retry/backoff and
-  selection-range logic, since those are the parts most likely to regress
-  silently.
+- **More test coverage.** There's now a Vitest suite (`npm test`, 43 tests) over
+  the store's pure logic — selection/range-select, filters/sort, the save queue's
+  retry/backoff/concurrency-cap behavior, the incremental stats deltas, and a
+  pinned regression test for the stale-save/version-guard race described above.
+  What's still missing: component-level tests (React Testing Library) for the
+  actual row/toolbar wiring, and the IndexedDB persistence layer (`db.ts`) is
+  untested since jsdom doesn't implement IndexedDB — it would need `fake-indexeddb`
+  or a real-browser test runner to cover properly.

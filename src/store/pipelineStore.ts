@@ -89,6 +89,10 @@ export function useStats(): Stats {
   );
 }
 
+export function getStats(): Stats {
+  return stats;
+}
+
 /** Adjusts the running stats for a single deal's before/after state. */
 function updateStatsForChange(before: Deal, after: Deal) {
   let changed = false;

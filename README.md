@@ -13,7 +13,10 @@ npm start
 This installs dependencies and starts the dev server at `http://localhost:5173`.
 (Equivalent to `npm install && npm run dev` if you prefer two steps.)
 
-Other scripts: `npm run build` (typecheck + production build), `npm run preview`.
+Other scripts: `npm run build` (typecheck + production build), `npm run preview`,
+`npm test` (Vitest — unit tests for the store's selection, filters/sort, save
+queue retry/backoff/concurrency, and stats logic; `npm run test:watch` for
+watch mode).
 
 ## What it is
 
