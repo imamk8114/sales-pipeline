@@ -14,7 +14,10 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # jsdom 30 requires Node ^22.22.2 || ^24.15.0 || >=26.0.0 (it relies
+          # on undici/webidl APIs not present in Node 20's bundled version) —
+          # 20 fails with "webidl.util.markAsUncloneable is not a function".
+          node-version: 22
           cache: npm
 
       - run: npm ci
